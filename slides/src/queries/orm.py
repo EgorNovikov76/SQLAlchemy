@@ -1,12 +1,12 @@
 from sqlalchemy import text, insert
-from slides.src.database import sync_engine, async_engine, session_factory, async_session_factory
-from slides.models import WorkerOrm, metadata_obj
+from slides.src.database import sync_engine, async_engine, session_factory, async_session_factory, Base
+from slides.models import WorkerOrm
 
 
 def create_tables():
     sync_engine.echo = False
-    metadata_obj.drop_all(bind=sync_engine)
-    metadata_obj.create_all(bind=sync_engine)
+    Base.metadata.drop_all(bind=sync_engine)
+    Base.metadata.create_all(bind=sync_engine)
     sync_engine.echo = True
 
 
