@@ -1,17 +1,7 @@
 from sqlalchemy import text, insert
-from slides.src.database import sync_engine, async_engine
-from slides.models import metadata_obj, workers_table
+from slides.src.database import sync_engine, async_engine, session_factory, async_session_factory
+from slides.models import WorkerOrm, metadata_obj
 
-
-# def get_123():
-#     with sync_engine.connect() as conn:
-#         res = conn.execute(text("SELECT 1,2,3 union select 4,5,6"))
-#         print(f"{res.first()=}")
-#
-# async def get_123_async():
-#     async with async_engine.connect() as conn:
-#         res = await conn.execute(text("SELECT 1,2,3 union select 4,5,6"))
-#         print(f"{res.first()=}")
 
 def create_tables():
     sync_engine.echo = False
@@ -21,15 +11,10 @@ def create_tables():
 
 
 def insert_data():
-    with sync_engine.connect() as conn:
-        # smtm = """INSERT INTO workers (username) VALUES
-        #     ('Bobr'),
-        #     ('Volk');"""
-        smtm = insert(workers_table).values(
-            [
-                {"username": "Bobr"},
-                {"username": "Volk"},
-            ]
-        )
-        conn.execute(smtm)
-        conn.commit()
+    worker_bobr = WorkerOrm(username='Bobr')
+    worker_volk = WorkerOrm(username='Volk')
+    with session_factory() as session:
+        session.add(worker_bobr)
+        session.add(worker_volk)
+        session.commit()
+
