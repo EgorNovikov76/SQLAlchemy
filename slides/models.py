@@ -35,3 +35,14 @@ class ResumesOrm(Base):
     worker_id: Mapped[int] = mapped_column(ForeignKey('workers.id', ondelete='CASCADE'))
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]
+
+
+metadata_obj = MetaData()
+
+workers_table = Table(
+    "workers",
+    metadata_obj,
+    Column("id", Integer, primary_key=True),
+    Column("username", String(256)),
+
+)
