@@ -11,9 +11,13 @@ SyncORM.create_tables()
 
 # SyncORM.insert_workers()
 
-SyncCore.insert_workers()
+# SyncCore.insert_workers()
+SyncORM.insert_workers()
 
-SyncCore.select_workers()
-SyncCore.update_worker()
+# SyncCore.select_workers()
+# SyncCore.update_worker()
+
+SyncORM.select_workers()
+SyncORM.update_worker()
 
 # asyncio.run(async_insert_data())

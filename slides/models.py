@@ -20,6 +20,8 @@ class WorkerOrm(Base):
     username: Mapped[str] = mapped_column()
 
 
+
+
 class WorkLoad(enum.Enum):
     parttime = 'parttime'
     fulltime = 'fulltime'
