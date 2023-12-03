@@ -1,6 +1,7 @@
 from sqlalchemy import text, insert, select, update
 from slides.src.database import sync_engine, async_engine, session_factory, async_session_factory, Base
-from slides.models import WorkerOrm
+from slides.models import WorkerOrm, ResumesOrm, WorkLoad
+
 
 class SyncORM:
     @staticmethod
@@ -14,8 +15,12 @@ class SyncORM:
     def insert_data():
         worker_jack = WorkerOrm(username='Jeck')
         worker_michael = WorkerOrm(username='Michael')
+        worker_bob = WorkerOrm(username='Bob')
+        worker_john = WorkerOrm(username='John')
         with session_factory() as session:
             session.add_all([worker_jack, worker_michael])
+            session.add(worker_bob)
+            session.add(worker_john)
             session.flush()
             session.commit()
 
@@ -26,10 +31,14 @@ class SyncORM:
                 [
                     {"username": "Jack"},
                     {"username": "Michael"},
+                    {"username": "Bob"},
+                    {"username": "John"},
                 ]
             )
             conn.execute(stmt)
             conn.commit()
+
+
 
     @staticmethod
     def select_workers():
@@ -47,6 +56,41 @@ class SyncORM:
             session.refresh(worker_michael)
             session.commit()
 
+    @staticmethod
+    def insert_resumes():
+        with sync_engine.connect() as conn:
+            stmt = insert(ResumesOrm).values(
+                [
+                    {"title":
+                         "Python Junior Developer",
+                     "compensation": 50000,
+                     "workload": WorkLoad.fulltime,
+                     "worker_id": 1},
+                    {"title":
+                         "Python Разработчик",
+                     "compensation": 150000,
+                     "workload": WorkLoad.fulltime,
+                     "worker_id": 2},
+                    {"title":
+                         "Python Data Engineer",
+                     "compensation": 250000,
+                     "workload": WorkLoad.parttime,
+                     "worker_id": 3},
+                    {"title":
+                         "Data Scientist",
+                     "compensation": 300000,
+                     "workload": WorkLoad.fulltime,
+                     "worker_id": 4},
+                ]
+            )
+            conn.execute(stmt)
+            conn.commit()
+
+
+
+
+
+
 
 
 
@@ -56,4 +100,3 @@ async def async_insert_data():
         worker_volk = WorkerOrm(username='Volk')
         session.add_all([worker_bobr, worker_volk])
         await session.commit()
-
