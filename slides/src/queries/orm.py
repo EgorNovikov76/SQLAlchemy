@@ -1,4 +1,5 @@
-from sqlalchemy import text, insert, select, update
+from sqlalchemy import text, insert, select, update, func, Integer, cast, and_
+from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
 from slides.src.database import sync_engine, async_engine, session_factory, async_session_factory, Base
 from slides.models import WorkerOrm, ResumesOrm, WorkLoad
 
@@ -85,6 +86,27 @@ class SyncORM:
             )
             conn.execute(stmt)
             conn.commit()
+
+    @staticmethod
+    def select_resumes_avg_compensation(like_language: str = 'Python'):
+        """select workload, avg(compensation)::int as avg_compensation
+            from resumes
+            where title like '%Python%' and compensation > 40000
+            group by workload
+        """
+        with session_factory() as session:
+            query = (
+                select(ResumesOrm.workload,
+                       cast(func.avg(ResumesOrm.compensation), Integer).label('avg_compensation'),
+                )
+                .select_from(ResumesOrm)
+                .filter(and_(
+                    ResumesOrm.title.contains(like_language),
+                    ResumesOrm.compensation > 40000,
+                ))
+                .group_by(ResumesOrm.workload)
+            )
+
 
 
 
