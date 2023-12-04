@@ -1,6 +1,5 @@
 from sqlalchemy import text, insert, select, update, func, Integer, cast, and_
-from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
-from slides.src.database import sync_engine, async_engine, session_factory, async_session_factory, Base
+from slides.src.database import sync_engine, session_factory, async_session_factory, Base
 from slides.models import WorkerOrm, ResumesOrm, WorkLoad
 
 
@@ -32,14 +31,10 @@ class SyncORM:
                 [
                     {"username": "Jack"},
                     {"username": "Michael"},
-                    {"username": "Bob"},
-                    {"username": "John"},
                 ]
             )
             conn.execute(stmt)
             conn.commit()
-
-
 
     @staticmethod
     def select_workers():
@@ -76,12 +71,12 @@ class SyncORM:
                          "Python Data Engineer",
                      "compensation": 250000,
                      "workload": WorkLoad.parttime,
-                     "worker_id": 3},
+                     "worker_id": 1},
                     {"title":
                          "Data Scientist",
                      "compensation": 300000,
                      "workload": WorkLoad.fulltime,
-                     "worker_id": 4},
+                     "worker_id": 2},
                 ]
             )
             conn.execute(stmt)
@@ -98,7 +93,7 @@ class SyncORM:
             query = (
                 select(ResumesOrm.workload,
                        cast(func.avg(ResumesOrm.compensation), Integer).label('avg_compensation'),
-                )
+                       )
                 .select_from(ResumesOrm)
                 .filter(and_(
                     ResumesOrm.title.contains(like_language),
@@ -106,14 +101,33 @@ class SyncORM:
                 ))
                 .group_by(ResumesOrm.workload)
             )
+            print(query.compile(compile_kwargs={"literal_binds": True}))
+            res = session.execute(query)
+            reuslt = res.all()
+            print(reuslt)
 
-
-
-
-
-
-
-
+    @staticmethod
+    async def insert_additional_resumes():
+        async with async_session_factory() as session:
+            workers = [
+                {"username": "Artem"},
+                {"username": "Petr"},
+                {"username": "Roman"},
+            ]
+            resumes = [
+                {"title": "Python Программист", "compensation": 60000, "workload": WorkLoad.fulltime, "worker_id": 3},
+                {"title": "Machine Learning Engineer", "compensation": 70000, "workload": WorkLoad.fulltime,
+                 "worker_id": 3},
+                {"title": "Python Data Scientst", "compensation": 80000, "workload": WorkLoad.parttime, "worker_id": 4},
+                {"title": "Python Analyst", "compensation": 90000, "workload": WorkLoad.fulltime, "worker_id": 4},
+                {"title": "Python Junior Developer", "compensation": 10000, "workload": WorkLoad.parttime,
+                 "worker_id": 5},
+            ]
+            insert_workers = insert(WorkerOrm).values(workers)
+            insert_resumes = insert(ResumesOrm).values(resumes)
+            await session.execute(insert_workers)
+            await session.execute(insert_resumes)
+            await session.commit()
 
 
 async def async_insert_data():
