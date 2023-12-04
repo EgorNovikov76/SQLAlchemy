@@ -19,6 +19,7 @@ SyncORM.insert_workers()
 
 SyncORM.select_workers()
 SyncORM.update_worker()
+SyncORM.insert_additional_resumes()
 
 SyncORM.insert_resumes()
 # asyncio.run(async_insert_data())

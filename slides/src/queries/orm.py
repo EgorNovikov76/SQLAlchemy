@@ -1,4 +1,5 @@
 from sqlalchemy import text, insert, select, update, func, Integer, cast, and_
+from sqlalchemy.orm import aliased
 from slides.src.database import sync_engine, session_factory, async_session_factory, Base
 from slides.models import WorkerOrm, ResumesOrm, WorkLoad
 
@@ -107,8 +108,8 @@ class SyncORM:
             print(reuslt)
 
     @staticmethod
-    async def insert_additional_resumes():
-        async with async_session_factory() as session:
+    def insert_additional_resumes():
+        with sync_engine.connect() as conn:
             workers = [
                 {"username": "Artem"},
                 {"username": "Petr"},
@@ -125,9 +126,56 @@ class SyncORM:
             ]
             insert_workers = insert(WorkerOrm).values(workers)
             insert_resumes = insert(ResumesOrm).values(resumes)
-            await session.execute(insert_workers)
-            await session.execute(insert_resumes)
-            await session.commit()
+            conn.execute(insert_workers)
+            conn.execute(insert_resumes)
+            conn.commit()
+
+    async def join_cte_subquery_window_func(like_language: str = 'Python'):
+        """WITH helper2 AS (
+                SELECT *, compensation-avg_workload_compensation AS compensation_diff
+	            FROM
+	            (SELECT
+                    w.id,
+                    w.username,
+                    r.compensation,
+                    r.workload,
+                    avg(compensation) OVER (PARTITION BY workload)::int AS avg_workload_compensation
+
+            FROM resumes r
+            JOIN workers w ON r.worker_id = w.id) helper1
+        )
+        SELECT * FROM helper2
+        ORDER BY compensation_diff DESC;
+        """
+        async with async_session_factory() as session:
+            r = aliased(ResumesOrm)
+            w = aliased(WorkerOrm)
+            subq = (
+                select(
+                    r,
+                    w,
+                    func.avg(r.compensation).over(partitionby=r.workload).label('avg_workload_compensation'),
+                )
+                .join(r, r.worker_id == w.id).subquery("helper1")
+            )
+            cte = (
+                select(
+                    subq.c.id,
+                    subq.c.username,
+                    subq.c.compensation,
+                    subq.c.workload,
+                    subq.c.avg_workload_compensation,
+                    (subq.c.compensation - subq.c.avg_workload_compensation).label("compensation_diff")
+                )
+                .cte("helper2")
+            )
+            query = (
+                select(cte)
+                .order_by(cte.c.compensation_diff.desc())
+            )
+
+            res = await session.execute(query)
+            result = res.all()
 
 
 async def async_insert_data():
