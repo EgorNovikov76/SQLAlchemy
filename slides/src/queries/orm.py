@@ -1,5 +1,5 @@
 from sqlalchemy import text, insert, select, update, func, Integer, cast, and_
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, joinedload, selectinload
 from slides.src.database import sync_engine, session_factory, async_session_factory, Base
 from slides.models import WorkerOrm, ResumesOrm, WorkLoad
 
@@ -178,9 +178,39 @@ class SyncORM:
             result = res.all()
 
 
-async def async_insert_data():
-    async with async_session_factory() as session:
-        worker_bobr = WorkerOrm(username='Bobr')
-        worker_volk = WorkerOrm(username='Volk')
-        session.add_all([worker_bobr, worker_volk])
-        await session.commit()
+    @staticmethod
+    def select_workers_with_lazy_relationship():
+        with session_factory() as session:
+            query = (
+                select(WorkerOrm)
+            )
+            res = session.execute(query)
+            result = res.scalars().all()
+
+            worker_1_resumes = result[0].resumes
+
+            worker_2_resumes = result[1].resumes
+
+    @staticmethod
+    def select_workers_with_joined_relationship():
+        with session_factory() as session:
+            query = (
+                select(WorkerOrm)
+                .options(joinedload(WorkerOrm.resumes))
+            )
+            res = session.execute(query)
+            result = res.unique.scalars().all()
+
+    @staticmethod
+    def select_workers_with_selectin_relationship():
+        with session_factory() as session:
+            query = (
+                select(WorkerOrm)
+                .options(selectinload(WorkerOrm.resumes))
+            )
+            res = session.execute(query)
+            result = res.unique.scalars().all()
+
+
+
+

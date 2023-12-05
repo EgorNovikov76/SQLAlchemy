@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Annotated
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from slides.src.database import Base, str_256
 import enum
 
@@ -19,7 +19,7 @@ class WorkerOrm(Base):
     id: Mapped[intpk]
     username: Mapped[str] = mapped_column()
 
-
+    resumes: Mapped[list["ResumesOrm"]] = relationship()
 
 
 class WorkLoad(enum.Enum):
@@ -37,6 +37,9 @@ class ResumesOrm(Base):
     worker_id: Mapped[int] = mapped_column(ForeignKey('workers.id', ondelete='CASCADE'))
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]
+
+    worker: Mapped["WorkerOrm"] = relationship()
+
 
 
 metadata_obj = MetaData()
