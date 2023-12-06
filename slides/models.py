@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, Annotated
-from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, text
+from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, text, CheckConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from slides.src.database import Base, str_256
 import enum
@@ -49,6 +49,11 @@ class ResumesOrm(Base):
 
     worker: Mapped["WorkerOrm"] = relationship(
         back_populates="resumes",
+    )
+
+    __table_args__ = (
+        Index("title_index", "title"),
+        CheckConstraint("compensation > 0", name="check_compensation_positive")
     )
 
 
