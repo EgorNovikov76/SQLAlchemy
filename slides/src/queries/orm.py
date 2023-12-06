@@ -1,5 +1,5 @@
 from sqlalchemy import text, insert, select, update, func, Integer, cast, and_
-from sqlalchemy.orm import aliased, joinedload, selectinload
+from sqlalchemy.orm import aliased, joinedload, selectinload, contains_eager
 from slides.src.database import sync_engine, session_factory, async_session_factory, Base
 from slides.models import WorkerOrm, ResumesOrm, WorkLoad
 
@@ -213,4 +213,45 @@ class SyncORM:
 
 
 
+    @staticmethod
+    def select_workers_with_condition_relationship():
+        with session_factory() as session:
+            query = (
+                select(WorkerOrm)
+                .options(selectinload(WorkerOrm.resumes_parttime))
+            )
+            res = session.execute(query)
+            result = res.unique.scalars().all()
 
+    @staticmethod
+    def select_workers_with_condition_relationship_contains_eager():
+        with session_factory() as session:
+            query = (
+                select(WorkerOrm)
+                .join(WorkerOrm.id)
+                .options(contains_eager(WorkerOrm.resumes))
+                .filter(ResumesOrm.workload == "parttime")
+            )
+            res = session.execute(query)
+            result = res.unique.scalars().all()
+
+    @staticmethod
+    def select_workers_with_condition_relationship_contains_eager_with_limit():
+        with session_factory() as session:
+            subq = (
+                select(ResumesOrm.id.label("parttime_resume_id"))
+                .filter(ResumesOrm.worker_id == WorkerOrm.id)
+                .order_by(WorkerOrm.id.desc())
+                .limit(2)
+                .scalar_subquery()
+                .correlate(WorkerOrm)
+            )
+
+            query = (
+                select(WorkerOrm)
+                .join(ResumesOrm, ResumesOrm.id.in_(subq))
+                .options(contains_eager(WorkerOrm.resumes))
+            )
+
+            res = session.execute(query)
+            result = res.unique.scalars().all()
