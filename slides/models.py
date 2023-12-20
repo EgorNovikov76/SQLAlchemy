@@ -1,9 +1,11 @@
+import enum
 from datetime import datetime
 from typing import Optional, Annotated
+
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, text, CheckConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from slides.src.database import Base, str_256
-import enum
 
 intpk = Annotated[int, mapped_column(Integer, primary_key=True)]
 created_at = Annotated[datetime, mapped_column(server_default=text("TIMEZONE('utc', now())"))]
@@ -56,6 +58,33 @@ class ResumesOrm(Base):
         CheckConstraint("compensation > 0", name="check_compensation_positive")
     )
 
+
+class VacanciesOrm(Base):
+    __tablename__ = "vacancies"
+
+    id: Mapped[intpk]
+    title: Mapped[str_256]
+    compensation: Mapped[Optional[int]]
+
+    resumes_replied: Mapped[list["ResumesOrm"]] = relationship(
+        back_populates="vacancies_replied",
+        secondary="vacancies_replies",
+    )
+
+
+class VacanciesRepliesOrm(Base):
+    __tablename__ = "vacancies_replies"
+
+    resume_id: Mapped[int] = mapped_column(
+        ForeignKey("resumes.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    vacancy_id: Mapped[int] = mapped_column(
+        ForeignKey("vacancies.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    cover_letter: Mapped[Optional[str]]
 
 
 metadata_obj = MetaData()
